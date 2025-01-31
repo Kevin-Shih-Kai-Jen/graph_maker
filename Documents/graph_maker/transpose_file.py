@@ -34,7 +34,9 @@ def read_data(inner_data: str, sheet_name: str):
                 data = pd.read_csv(inner_data, sheet_name=sheet_name, dtype=str)
 
             except:
-                data = pd.read_csv(inner_data, dtype=str)  ### 有些沒有 sheet_name，所以這樣才可
+                data = pd.read_csv(
+                    inner_data, dtype=str
+                )  ### 有些沒有 sheet_name，所以這樣才可
 
     return data
 

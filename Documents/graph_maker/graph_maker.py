@@ -35,8 +35,12 @@ def parameter_input() -> list[list[str]]:
         stop_inserting = input("不想要繼續輸入請輸入stop: ")
         if stop_inserting == "stop":
             break"""
-        
-    raw_data = [["/Users/coolguy/Desktop/經濟指標/數據/transposed_StateMortgagesPercent-30-89DaysLate-thru-2024-06.csv, transposed_StateMortgagesPercen,  FIPSCode, -----, 0, 4"]]
+
+    raw_data = [
+        [
+            "/Users/coolguy/Desktop/經濟指標/數據/transposed_StateMortgagesPercent-30-89DaysLate-thru-2024-06.csv, transposed_StateMortgagesPercen,  FIPSCode, -----, 0, 4"
+        ]
+    ]
     return raw_data
 
 
@@ -86,10 +90,10 @@ def combine_six_data(inner_data: list[str]) -> list[list[str]]:
                 inner_data[i * 6 + 2],
                 inner_data[i * 6 + 3],
                 inner_data[i * 6 + 4],
-                inner_data[i * 6 + 5]
+                inner_data[i * 6 + 5],
             ]
         )
-    
+
     return combined_data
 
 
@@ -110,14 +114,16 @@ def read_data(imported_data: list[list[str]]) -> list[pd.DataFrame]:
         file_type = find_file_type(imported_data[i][0])
         str_skip = (lambda x: 0 if x is None else x)(imported_data[i][5])
         int_skip = int(str_skip)
-        
+
         match file_type:
             case ".csv":
                 path_data.append(pd.read_csv(imported_data[i][0], skiprows=int_skip))
 
             case ".xlsx" | ".xls":
                 path_data.append(
-                    pd.read_excel(imported_data[i][0], sheet_name=sheets[i], skiprows=int_skip)
+                    pd.read_excel(
+                        imported_data[i][0], sheet_name=sheets[i], skiprows=int_skip
+                    )
                 )
 
     return path_data
@@ -149,12 +155,12 @@ def find_data(
     """
     column_parameters = []
     which_line = []
-    
+
     ############################ 找出直行、橫列的值 ############################
     for item in original_data_list:
         column_parameters.append([item[2], item[3]])
         which_line.append(item[4])
-    
+
     date_data, other_than_date_data = parse_data(pd_data, column_parameters, which_line)
 
     return date_data, other_than_date_data
@@ -173,8 +179,7 @@ def parse_data(
 
     date = []
     other_than_date_data = []
-    
-    
+
     for i in range(len(column_parameters)):
         line_length = len(pd_data[i][column_parameters[i][0]])
         actual_data = [
@@ -201,18 +206,20 @@ def determine_whether_the_timeline_is_reverse_or_not(
     inner_date = inner_actual_data[0]
     middle_data = len(inner_date) // 2
 
-    try:    
-        intermediate_date = pd.to_datetime(inner_actual_data, format="None", errors="raise")
+    try:
+        intermediate_date = pd.to_datetime(
+            inner_actual_data, format="None", errors="raise"
+        )
 
     except Exception:
         try:
-            intermediate_date = inner_date.apply(lambda x : parse(x))
+            intermediate_date = inner_date.apply(lambda x: parse(x))
 
         except Exception as e:
             print(f"這個日期格式是錯誤的, {e}")
-            
+
     first_line = intermediate_date[middle_data]
-    second_line = intermediate_date[middle_data+1]
+    second_line = intermediate_date[middle_data + 1]
 
     if first_line > second_line:
         return True
@@ -245,12 +252,19 @@ class DrawGraph:
 
     def __init__(
         self,
-        inner_date_data: list[pd.to_datetime],
+        inner_date_data: list[pd.Series],
         inner_other_data: list[pd.DataFrame],
     ):
 
         self.inner_other_data = inner_other_data
-        self.inner_date_data = inner_date_data
+        
+        """
+        因為 inner_date_data 是 pd.Series
+        所以要轉換為 datetime 才能讓系統讀懂
+        因為有些功能能讀懂
+        但有些會讀錯
+        """
+        self.inner_date_data = [pd.to_datetime(date, errors="coerce") for date in inner_date_data]
 
     def plot_data(self):
         """先 plot 要畫的圖形"""
@@ -284,12 +298,7 @@ class DrawGraph:
         plt.style.use("seaborn-v0_8-darkgrid")
         plt.legend()
         plt.grid(True)
-        
-        ######### 改變黑壓壓的日期 #########
-        """axis = plt.gca()# 獲得當前的x,y軸
-        axis.xaxis.set_major_locator(mdate.MonthLocator(interval=3))# 日期為每3個月顯示一次
-        axis.xaxis.set_major_formatter(mdate.DateFormatter("%Y-%m"))"""
-        
+
         plt.show()
 
     def input_lines_name(self) -> list[str]:
@@ -301,11 +310,20 @@ class DrawGraph:
 
         return names
 
+    
+    def set_date_gaps():
+        ######### 改變黑壓壓的日期 #########
+        axis = plt.gca()# 獲得當前的x,y軸
+        axis.xaxis.set_major_locator(mdate.YearLocator(interval=1))# 日期為每3個月顯示一次
+        axis.xaxis.set_major_formatter(mdate.DateFormatter("%Y-%m"))
+        
+        
     def execute_necessary_functions(self):
         self.plot_data()
         self.label_names()
         self.title()
         self.figtext()
+        self.set_date_gaps
         self.other_settings()
 
     def data_times_multiplier(self) -> pd.DataFrame:
